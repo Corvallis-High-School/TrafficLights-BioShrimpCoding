@@ -1,7 +1,7 @@
 package edu.corvallis.processing;
 
 public class MySketch extends ProcessingSketch {
-    String state = "green"; //
+    String state = "green";
     float carX = 40;
     int[] redLightPos = {510, 55};
     int[] yellowLightPos = {510, 115};
@@ -13,18 +13,18 @@ public class MySketch extends ProcessingSketch {
     double minSpeed = 2;
     int currentFrame = 0;
     double second = 0;
-    int[] rgbDay = {185, 220, 250};  
+    int redDef = 185;
+    int greenDef = 250;
+    int blueDef = 250;
+    int[] rgbDay = {redDef, greenDef, blueDef};
     int[] rgbNight = {20, 20, 60};
-    int[] currentRGB = rgbDay;
+    int[] currentRGB = rgbDay.clone();
     String DayCycle = "Day";
 
-    @Override 
+    @Override
     public void settings() {
         size(600, 400);
-        
     }
-
-  
 
     @Override
     public void draw() {
@@ -34,20 +34,36 @@ public class MySketch extends ProcessingSketch {
         drawCar(carX, 305);
         moveCar();
         currentFrame++;
-        second = currentFrame / 60.0; 
+        second = currentFrame / 60.0;
+        fill(255, 0, 0);
         text("Second: " + (int) second, 10, 20);
-        if(second % 5 == 0) {
+
+        // Switch the light once every 5 seconds (300 frames), not on frame 0
+        if (currentFrame % 300 == 0) {
             switch (state) {
                 case "green" -> state = "yellow";
                 case "yellow" -> state = "red";
                 case "red" -> state = "green";
             }
         }
-        if(second % 10 == 0) {
-            DayCycle = DayCycle.equals("Day") ? "Night" : "Day";
-            currentRGB = DayCycle.equals("Day") ? rgbDay : rgbNight;
-           
+       
+        int cycleFrame = currentFrame % 2400;   
+        float t;                               
+        if (cycleFrame < 600) {                 
+            t = cycleFrame / 600.0f;
+            DayCycle = "Night";
+        } else if (cycleFrame < 1200) {         
+            t = 1;
+        } else if (cycleFrame < 1800) {         
+            t = 1 - (cycleFrame - 1200) / 600.0f;
+            DayCycle = "Day";
+        } else {                                
+            t = 0;
         }
+        for (int i = 0; i < 3; i++) {
+            currentRGB[i] = Math.round(rgbDay[i] + (rgbNight[i] - rgbDay[i]) * t);
+        }
+      
     }
 
     public void drawRoad() {
@@ -67,26 +83,26 @@ public class MySketch extends ProcessingSketch {
         rect(475, 20, 70, 190, 10);   // box
 
         // red
-        if (state.equals("red")) { 
-            fill(230, 40, 40); 
-        } else { 
-            fill(90, 30, 30); 
+        if (state.equals("red")) {
+            fill(230, 40, 40);
+        } else {
+            fill(90, 30, 30);
         }
         ellipse(redLightPos[0], redLightPos[1], 50, 50);
 
         // yellow
-        if (state.equals("yellow")) { 
-            fill(250, 210, 40); 
-        } else { 
-            fill(90, 80, 20); 
+        if (state.equals("yellow")) {
+            fill(250, 210, 40);
+        } else {
+            fill(90, 80, 20);
         }
         ellipse(yellowLightPos[0], yellowLightPos[1], 50, 50);
 
         // green
-        if (state.equals("green")) { 
-            fill(60, 200, 80); 
-        } else { 
-            fill(25, 75, 35); 
+        if (state.equals("green")) {
+            fill(60, 200, 80);
+        } else {
+            fill(25, 75, 35);
         }
         ellipse(greenLightPos[0], greenLightPos[1], 50, 50);
     }
@@ -102,63 +118,58 @@ public class MySketch extends ProcessingSketch {
     }
 
     public void moveCar() {
-       carX += currentSpeed;
+        carX += currentSpeed;
         switch (state) {
             case "green" -> {
                 currentSpeed += acceleration;
-                System.out.println("Green light! Current speed: " + currentSpeed);
-                if(currentSpeed > maxSpeed) {
+                if (currentSpeed > maxSpeed) {
                     currentSpeed = maxSpeed;
                 }
             }
             case "yellow" -> {
                 currentSpeed -= deceleration;
-                System.out.println("Yellow light! Current speed: " + currentSpeed);
-                if(currentSpeed < minSpeed) {
+                if (currentSpeed < minSpeed) {
                     currentSpeed = minSpeed;
                 }
             }
             case "red" -> {
                 currentSpeed -= deceleration;
-                System.out.println("Red light! Current speed: " + currentSpeed);
-                if(currentSpeed < 0) {
+                if (currentSpeed < 0) {
                     currentSpeed = 0;
                 }
             }
             default -> {
             }
         }
-        if(carX > width) {
+        if (carX > width) {
             carX = -120;
-        } 
+        }
     }
 
-  
     @Override
-    public void mouseMoved(){
+    public void mouseMoved() {
     }
-    @Override 
+
+    @Override
     public void mousePressed() {
-        double d = calculateDistance(mouseX, mouseY, redLightPos[0], redLightPos[1]);
+        double dRed = calculateDistance(mouseX, mouseY, redLightPos[0], redLightPos[1]);
         double dYellow = calculateDistance(mouseX, mouseY, yellowLightPos[0], yellowLightPos[1]);
         double dGreen = calculateDistance(mouseX, mouseY, greenLightPos[0], greenLightPos[1]);
-        
-        if (d <= 25) {
+
+        if (dRed <= 25) {
             state = "red";
-        }
-        else if (dYellow <= 25) {
+        } else if (dYellow <= 25) {
             state = "yellow";
-        }
-        else if (dGreen <= 25) {
+        } else if (dGreen <= 25) {
             state = "green";
         }
-        
     }
 
     public double calculateDistance(int x1, int y1, int x2, int y2) {
         return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     }
-    //Main method
+
+    // Main method
     public static void main(String[] args) {
         launch(MySketch.class);
     }
